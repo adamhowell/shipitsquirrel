@@ -218,7 +218,8 @@
             context.fillStyle = 'blue';
             cities.forEach(city => {
                 // draw cities
-                const squirrelImage = loadedImages(squirrelImages[randInt(0, squirrelImages.length - 1)]);
+                const imageKey = squirrelImages[randInt(0, squirrelImages.length - 1)];
+                const squirrelImage = loadedImages[imageKey];
                 console.log(squirrelImage)
 
                 // Draw the missile image at the current position
@@ -306,7 +307,7 @@
                 context.lineTo(missile.pos.x, missile.pos.y);
                 context.stroke();
 
-                missileImage = loadedImages(missile.imageSrc);
+                missileImage = loadedImages[missile.imageSrc];
                 console.log(missileImage)
 
                 // Draw the missile image at the current position
