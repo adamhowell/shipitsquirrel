@@ -396,6 +396,44 @@
             }
         });
 
+        // Listen to touch events to fire counter-missiles
+        window.addEventListener('touchstart', e => {
+            // Prevent the browser from doing its default thing (like scrolling)
+            e.preventDefault();
+
+            // Get the touch position; touches is a TouchList, where the first touch point is the point of interaction
+            const touch = e.touches[0];
+            const x = touch.clientX - e.target.offsetLeft;
+            const y = touch.clientY - e.target.offsetTop;
+
+            // Determine which silo is closest to the touch point and fire a counter-missile from it
+            let launchSilo = null;
+            let siloDistance = Infinity;  // Start with a very high number
+            silos.forEach(silo => {
+                const dist = distance({ x, y }, silo);
+                if (dist < siloDistance && silo.missiles > 0) {
+                    siloDistance = dist;
+                    launchSilo = silo;
+                }
+            });
+
+            if (launchSilo) {
+                const start = { x: launchSilo.x, y: launchSilo.y };
+                const target = { x, y };
+                const angle = angleBetweenPoints(start, target);
+                launchSilo.missiles--;  // Decrement a missile from the silo
+                counterMissiles.push({
+                    start,
+                    target,
+                    pos: { x: launchSilo.x, y: launchSilo.y },
+                    dx: counterMissileSpeed * Math.sin(angle),
+                    dy: counterMissileSpeed * -Math.cos(angle),
+                    alive: true
+                });
+            }
+        }, { passive: false }); // The passive: false option makes it possible to call preventDefault
+
+
         // start the game
         requestAnimationFrame(loop);
 
