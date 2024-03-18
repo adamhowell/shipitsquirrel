@@ -170,7 +170,7 @@
         // game loop
         // start at -2 seconds (time is in milliseconds) to give the player 1
         // second before the missiles start
-        let lastTime = -4000;
+        let lastTime = -2000;
         function loop(time) {
             requestAnimationFrame(loop);
             context.clearRect(0,0,canvas.width,canvas.height);
@@ -179,7 +179,7 @@
             // more missiles)
             if (time - lastTime > 3000 && currInterval < levels[currLevel].length) {
                 for (let i = 0; i < levels[currLevel][currInterval]; i++) {
-                spawnMissile();
+                    spawnMissile();
                 }
 
                 currInterval++;
@@ -433,8 +433,10 @@
             }
         }, { passive: false }); // The passive: false option makes it possible to call preventDefault
 
-        // start the game
-        requestAnimationFrame(loop);
+        // Start the game after a 2-second delay
+        setTimeout(() => {
+            requestAnimationFrame(loop);
+        }, 2000); // 2000 milliseconds = 2 seconds
 
         resizeCanvas();
 
