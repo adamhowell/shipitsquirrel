@@ -84,6 +84,24 @@
             'img/squirrel_03.png'
         ]
 
+        const preloadedImages = []; // Array to hold preloaded images
+
+        function preloadImages(imageUrls) {
+            for (const url of imageUrls) {
+                const img = new Image();
+                img.onload = function() {
+                    preloadedImages.push(img); // Add loaded image to the array
+                };
+                img.src = url;
+            }
+        }
+
+        // Combine all image sources into a single array
+        const allImageSources = [...missileImages, ...squirrelImages, 'img/logo.png'];
+
+        // Call the preload function with all your images
+        preloadImages(allImageSources);
+
         // information about each missile
         let missiles = [];
         let counterMissiles = [];
