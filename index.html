@@ -60,6 +60,7 @@
         const missileSize = 4;  // the radius/size of a missile
         const missileSpeed = 2;  // how fast a missile moves
         const counterMissileSpeed = 15;  // how fast a counter-missile moves
+        let loadedImagesGlobal = [];
 
         const missileImages =
         [
@@ -106,7 +107,10 @@
                 imagePromises.push(promise);
             }
 
-            return Promise.all(imagePromises).then(() => images);
+            return Promise.all(imagePromises).then(() => {
+                loadedImagesGlobal = images; // Assign the loaded images to the global variable
+                return images; // Return the images object in case you need it immediately after preloading
+            });
         }
 
         // Aggregate all your image sources into a single array for preloading
@@ -219,7 +223,7 @@
             cities.forEach(city => {
                 // draw cities
                 const imageKey = squirrelImages[randInt(0, squirrelImages.length - 1)];
-                const squirrelImage = loadedImages[imageKey];
+                const squirrelImage = loadedImagesGlobal[imageKey];
                 console.log(squirrelImage)
 
                 // Draw the missile image at the current position
@@ -307,7 +311,7 @@
                 context.lineTo(missile.pos.x, missile.pos.y);
                 context.stroke();
 
-                missileImage = loadedImages[missile.imageSrc];
+                missileImage = loadedImagesGlobal[missile.imageSrc];
                 console.log(missileImage)
 
                 // Draw the missile image at the current position
