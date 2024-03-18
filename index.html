@@ -26,6 +26,28 @@
 <body>
     <img src="img/logo.png" class="absolute mx-auto top-10">
     <canvas id="game" width="800" height="550" class="h-screen w-full"></canvas>
+
+    <div class="hidden">
+        <img src="img/reddit.png">
+        <img src="img/cash.png">
+        <img src="img/chrome.png">
+        <img src="img/email.png">
+        <img src="img/facebook.png">
+        <img src="img/facetime.png">
+        <img src="img/linkedin.png">
+        <img src="img/playstation.png">
+        <img src="img/reddit.png">
+        <img src="img/snapchat.png">
+        <img src="img/steam.png">
+        <img src="img/telegram.png">
+        <img src="img/tiktok.png">
+        <img src="img/xbox.png">
+        <img src="img/youtube.png">
+        <img src="img/squirrel_01.png">
+        <img src="img/squirrel_02.png">
+        <img src="img/squirrel_03.png">
+    </div>
+
     <script>
         const canvas = document.getElementById('game');
         const context = canvas.getContext('2d');
@@ -361,7 +383,43 @@
         }
 
         // listen to mouse events to fire counter-missiles
-        window.addEventListener('click touchstart', e => {
+        window.addEventListener('click', e => {
+            // get the x/y position of the mouse pointer by subtracting the x/y
+            // position of the canvas element from the x/y position of the
+            // pointer
+            const x = e.clientX - e.target.offsetLeft;
+            const y = e.clientY - e.target.offsetTop;
+
+            // determine which silo is closest to the pointer and fire a
+            // counter-missile from it
+            let launchSilo = null;
+            let siloDistance = Infinity;  // start at the largest number
+            silos.forEach(silo => {
+                const dist = distance({ x, y }, silo);
+                if (dist < siloDistance && silo.missiles) {
+                siloDistance = dist;
+                launchSilo = silo;
+                }
+            });
+
+            if (launchSilo) {
+                const start = { x: launchSilo.x, y: launchSilo.y };
+                const target = { x, y };
+                const angle = angleBetweenPoints(start, target);
+                launchSilo.missiles--;
+                counterMissiles.push({
+                start,
+                target,
+                pos: { x: launchSilo.x, y: launchSilo. y},
+                dx: counterMissileSpeed * Math.sin(angle),
+                dy: counterMissileSpeed * -Math.cos(angle),
+                alive: true
+                });
+            }
+        });
+
+        // listen to mouse events to fire counter-missiles
+        window.addEventListener('touchstart', e => {
             // get the x/y position of the mouse pointer by subtracting the x/y
             // position of the canvas element from the x/y position of the
             // pointer
