@@ -258,7 +258,7 @@
         // collision check
         explosions.forEach(explosion => {
         const dist = distance(explosion, missile.pos);
-        if (dist < (missileSize + 10) + explosion.size) {
+        if (dist < (missileSize + 15) + explosion.size) {
             missile.alive = false;
         }
         });
