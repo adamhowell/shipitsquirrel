@@ -26,7 +26,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=.5" />
 </head>
 <body>
-    <img src="img/logo.png" class="absolute mx-auto p-10 top-10">
+    <img src="img/logo.png" class="absolute mx-auto p-10 top-5">
+
+    <div id="startModal" class="modal absolute inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center p-10">
+        <div class="bg-white max-w-lg p-5 rounded">
+            <h2 class="font-black pb-5 text-2xl">
+                Welcome to Ship It Squirrel: The Game
+            </h2>
+            <p class="text-lg">
+                <strong>Ship It Squirrel needs your help!</strong>
+                He’s trying to ship and needs you to help save him from distractions:
+                social media, email, videogames – you know the ones.
+                Click or tap to blow 'em up so our furry friend can <em>just ship it</em>!
+            </p>
+            <img src="img/squirrel.gif" class="mx-auto p-10">
+            <button id="startGameBtn" class="bg-blue-500 block font-bold mt-4 px-4 py-2 text-xl text-white rounded uppercase w-full">
+                Let's ship it
+            </button>
+        </div>
+    </div>
+
     <canvas id="game" width="800" height="550" class="h-screen w-full"></canvas>
 
     <script>
@@ -466,12 +485,20 @@
             }
         }, { passive: false }); // The passive: false option makes it possible to call preventDefault
 
-        // Start the game after a 2-second delay
-        preloadImages(allImageSources).then((loadedImages) => {
-            setTimeout(() => {
-                requestAnimationFrame(loop);
-            }, 2000); // 2000 milliseconds = 2 seconds
-        });
+        const startModal = document.getElementById('startModal');
+        const startGameBtn = document.getElementById('startGameBtn');
+
+        // Function to hide the modal and start the game
+        function startGame() {
+            event.stopPropagation(); // Prevent the click event from propagating to the window
+            startModal.style.display = 'none'; // Hide the modal
+            preloadImages(allImageSources).then((loadedImages) => {
+                requestAnimationFrame(loop); // Start the game loop
+            });
+        }
+
+        // Event listener for the 'Let's ship it!' button
+        startGameBtn.addEventListener('click', startGame);
 
         resizeCanvas();
 
