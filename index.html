@@ -121,6 +121,7 @@
         const missileSpawns = cities
             .concat(silos)
             .concat([{ x: 0, y: 0 }, { x: canvas.width, y: 0 }])
+            .concat([{ x: randInt(0, canvas.width), y: 0 }])
             .map(pos => ({ x: pos.x, y: 0 }));
 
         // return a random integer between min (inclusive) and max (inclusive)
