@@ -435,14 +435,14 @@
             }
         }, { passive: false }); // The passive: false option makes it possible to call preventDefault
 
-        resizeCanvas();
-
         // Start the game after a 2-second delay
         window.onload = function (event) {
             setTimeout(() => {
                 requestAnimationFrame(loop);
             }, 2000); // 2000 milliseconds = 2 seconds
         }
+
+        resizeCanvas();
 
         // Add event listener to resize the canvas when the window is resized
         window.addEventListener('resize', resizeCanvas);
