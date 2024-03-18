@@ -40,7 +40,7 @@
                 Click or tap to blow 'em up so our furry friend can <em>just ship it</em>!
             </p>
             <img src="img/squirrel.gif" class="mx-auto p-10">
-            <button id="startGameBtn" class="bg-blue-500 block font-bold mt-4 px-4 py-2 text-xl text-white rounded uppercase w-full">
+            <button id="startGameBtn" class="bg-blue-500 block font-bold mt-4 px-4 py-2 text-2xl md:text-xl text-white rounded uppercase w-full">
                 Let's ship it
             </button>
         </div>
@@ -493,7 +493,9 @@
             event.stopPropagation(); // Prevent the click event from propagating to the window
             startModal.style.display = 'none'; // Hide the modal
             preloadImages(allImageSources).then((loadedImages) => {
-                requestAnimationFrame(loop); // Start the game loop
+                setTimeout(() => {
+                    requestAnimationFrame(loop); // Start the game loop
+                }, 500);
             });
         }
 
