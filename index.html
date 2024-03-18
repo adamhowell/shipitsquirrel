@@ -27,27 +27,6 @@
     <img src="img/logo.png" class="absolute mx-auto top-10">
     <canvas id="game" width="800" height="550" class="h-screen w-full"></canvas>
 
-    <div class="hidden">
-        <img src="img/reddit.png">
-        <img src="img/cash.png">
-        <img src="img/chrome.png">
-        <img src="img/email.png">
-        <img src="img/facebook.png">
-        <img src="img/facetime.png">
-        <img src="img/linkedin.png">
-        <img src="img/playstation.png">
-        <img src="img/reddit.png">
-        <img src="img/snapchat.png">
-        <img src="img/steam.png">
-        <img src="img/telegram.png">
-        <img src="img/tiktok.png">
-        <img src="img/xbox.png">
-        <img src="img/youtube.png">
-        <img src="img/squirrel_01.png">
-        <img src="img/squirrel_02.png">
-        <img src="img/squirrel_03.png">
-    </div>
-
     <script>
         const canvas = document.getElementById('game');
         const context = canvas.getContext('2d');
@@ -191,7 +170,7 @@
         // game loop
         // start at -2 seconds (time is in milliseconds) to give the player 1
         // second before the missiles start
-        let lastTime = -2000;
+        let lastTime = -4000;
         function loop(time) {
             requestAnimationFrame(loop);
             context.clearRect(0,0,canvas.width,canvas.height);
