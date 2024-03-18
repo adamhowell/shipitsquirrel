@@ -87,6 +87,31 @@
             'img/squirrel_03.png'
         ]
 
+        // Preload all images and store them in an easily accessible manner
+        function preloadImages(imageSources) {
+            let images = {};
+            let loadedImages = 0;
+            let imagePromises = [];
+
+            for (let src of imageSources) {
+                let promise = new Promise((resolve, reject) => {
+                    let img = new Image();
+                    img.onload = function() {
+                        images[src] = img;  // Store image reference
+                        resolve(img);
+                    };
+                    img.onerror = reject;
+                    img.src = src;
+                });
+                imagePromises.push(promise);
+            }
+
+            return Promise.all(imagePromises).then(() => images);
+        }
+
+        // Aggregate all your image sources into a single array for preloading
+        let allImageSources = missileImages.concat(squirrelImages);
+
         // information about each missile
         let missiles = [];
         let counterMissiles = [];
@@ -193,8 +218,8 @@
             context.fillStyle = 'blue';
             cities.forEach(city => {
                 // draw cities
-                const squirrelImage = new Image();
-                squirrelImage.src = squirrelImages[randInt(0, squirrelImages.length - 1)];
+                const squirrelImage = loadedImages(squirrelImages[randInt(0, squirrelImages.length - 1)]);
+                console.log(squirrelImage)
 
                 // Draw the missile image at the current position
                 const imageSize = 150;  // Size of the missile image
@@ -281,8 +306,8 @@
                 context.lineTo(missile.pos.x, missile.pos.y);
                 context.stroke();
 
-                const missileImage = new Image();
-                missileImage.src = missile.imageSrc;
+                missileImage = loadedImages(missile.imageSrc);
+                console.log(missileImage)
 
                 // Draw the missile image at the current position
                 const imageSize = 40;  // Size of the missile image
@@ -437,11 +462,11 @@
         }, { passive: false }); // The passive: false option makes it possible to call preventDefault
 
         // Start the game after a 2-second delay
-        window.onload = function (event) {
+        preloadImages(allImageSources).then((loadedImages) => {
             setTimeout(() => {
                 requestAnimationFrame(loop);
             }, 2000); // 2000 milliseconds = 2 seconds
-        }
+        });
 
         resizeCanvas();
 
