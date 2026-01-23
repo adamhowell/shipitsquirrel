@@ -2,6 +2,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
 
 const API_BASE = process.env.SHIPITSQUIRREL_URL || "https://shipitsquirrel.com";
 const API_TOKEN = process.env.SHIPITSQUIRREL_API_TOKEN;
@@ -65,10 +66,7 @@ server.tool(
   "get_app",
   "Get detailed information about a specific app",
   {
-    app_id: {
-      type: "string",
-      description: "The app ID or name",
-    },
+    app_id: z.string().describe("The app ID or name"),
   },
   async ({ app_id }) => {
     const data = await apiRequest(`/apps/${app_id}`);
@@ -102,14 +100,8 @@ server.tool(
   "list_bugs",
   "List bugs for a specific app, optionally filtered by status",
   {
-    app_id: {
-      type: "string",
-      description: "The app ID",
-    },
-    status: {
-      type: "string",
-      description: "Filter by status: open, resolved, or ignored (optional)",
-    },
+    app_id: z.string().describe("The app ID"),
+    status: z.string().optional().describe("Filter by status: open, resolved, or ignored (optional)"),
   },
   async ({ app_id, status }) => {
     const params = status ? `?status=${status}` : "";
@@ -151,14 +143,8 @@ server.tool(
   "get_bug",
   "Get detailed information about a specific bug including backtrace",
   {
-    app_id: {
-      type: "string",
-      description: "The app ID",
-    },
-    bug_id: {
-      type: "string",
-      description: "The bug ID",
-    },
+    app_id: z.string().describe("The app ID"),
+    bug_id: z.string().describe("The bug ID"),
   },
   async ({ app_id, bug_id }) => {
     const data = await apiRequest(`/apps/${app_id}/bugs/${bug_id}`);
@@ -201,18 +187,9 @@ server.tool(
   "resolve_bug",
   "Mark a bug as resolved",
   {
-    app_id: {
-      type: "string",
-      description: "The app ID",
-    },
-    bug_id: {
-      type: "string",
-      description: "The bug ID",
-    },
-    notes: {
-      type: "string",
-      description: "Optional resolution notes",
-    },
+    app_id: z.string().describe("The app ID"),
+    bug_id: z.string().describe("The bug ID"),
+    notes: z.string().optional().describe("Optional resolution notes"),
   },
   async ({ app_id, bug_id, notes }) => {
     const body = notes ? JSON.stringify({ notes }) : undefined;
@@ -237,18 +214,9 @@ server.tool(
   "ignore_bug",
   "Mark a bug as ignored (won't show in open bugs)",
   {
-    app_id: {
-      type: "string",
-      description: "The app ID",
-    },
-    bug_id: {
-      type: "string",
-      description: "The bug ID",
-    },
-    notes: {
-      type: "string",
-      description: "Optional notes explaining why it's being ignored",
-    },
+    app_id: z.string().describe("The app ID"),
+    bug_id: z.string().describe("The bug ID"),
+    notes: z.string().optional().describe("Optional notes explaining why it's being ignored"),
   },
   async ({ app_id, bug_id, notes }) => {
     const body = notes ? JSON.stringify({ notes }) : undefined;
@@ -273,14 +241,8 @@ server.tool(
   "reopen_bug",
   "Reopen a previously resolved or ignored bug",
   {
-    app_id: {
-      type: "string",
-      description: "The app ID",
-    },
-    bug_id: {
-      type: "string",
-      description: "The bug ID",
-    },
+    app_id: z.string().describe("The app ID"),
+    bug_id: z.string().describe("The bug ID"),
   },
   async ({ app_id, bug_id }) => {
     const data = await apiRequest(`/apps/${app_id}/bugs/${bug_id}/reopen`, {
