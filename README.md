@@ -19,7 +19,7 @@ Add this to your Claude Code settings (`~/.claude/settings.json`):
   "mcpServers": {
     "shipitsquirrel": {
       "command": "npx",
-      "args": ["-y", "github:adamhowell/shipitsquirrel_com/mcp-server"],
+      "args": ["-y", "github:adamhowell/shipitsquirrel"],
       "env": {
         "SHIPITSQUIRREL_API_TOKEN": "your-api-token-here"
       }
@@ -64,7 +64,6 @@ Once connected, you can ask Claude things like:
 ## Development
 
 ```bash
-cd mcp-server
 npm install
 SHIPITSQUIRREL_API_TOKEN=your-token npm start
 ```
