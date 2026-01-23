@@ -1,0 +1,28 @@
+{
+  "name": "@shipitsquirrel/mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for Ship It Squirrel - bug tracking for Rails apps",
+  "main": "index.js",
+  "type": "module",
+  "bin": {
+    "shipitsquirrel-mcp": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "mcp",
+    "claude",
+    "shipitsquirrel",
+    "bug-tracking",
+    "rails"
+  ],
+  "author": "Ship It Squirrel",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
