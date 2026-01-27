@@ -38,6 +38,72 @@ const server = new McpServer({
   version: "1.0.0",
 });
 
+// List all servers
+server.tool(
+  "list_servers",
+  "List all your servers with their IP addresses and status",
+  {},
+  async () => {
+    const data = await apiRequest("/servers");
+
+    const summary = data.servers.map(server =>
+      `- **${server.name}** (${server.ip_address}): ${server.status} - ${server.app_count} apps${server.claude_ready ? " [Claude Ready]" : ""}`
+    ).join("\n");
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: `# Your Servers\n\n${summary}\n\nTotal: ${data.servers.length} servers\n\n**Note:** You can SSH into these servers as the deploy user to run commands or use Claude Code.`,
+        },
+      ],
+    };
+  }
+);
+
+// Get server details
+server.tool(
+  "get_server",
+  "Get detailed information about a specific server including its apps",
+  {
+    server_id: z.string().describe("The server ID, name, or IP address"),
+  },
+  async ({ server_id }) => {
+    const data = await apiRequest(`/servers/${server_id}`);
+    const server = data.server;
+
+    const appsList = server.apps?.map(app =>
+      `- ${app.name}: ${app.status} - ${app.deploy_path}`
+    ).join("\n") || "No apps deployed";
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: `# ${server.name}
+
+**IP Address:** ${server.ip_address}
+**Status:** ${server.status}
+**Provider:** ${server.provider || "N/A"}
+**Region:** ${server.region || "N/A"}
+**SSH User:** ${server.ssh_user}
+**Claude Ready:** ${server.claude_ready ? "Yes" : "No"}
+
+## Apps on this server
+${appsList}
+
+## SSH Access
+\`\`\`bash
+ssh ${server.ssh_user}@${server.ip_address}
+\`\`\`
+
+**Note:** When working on this server, make local git commits for any code changes.`,
+        },
+      ],
+    };
+  }
+);
+
 // List all apps
 server.tool(
   "list_apps",
@@ -47,7 +113,7 @@ server.tool(
     const data = await apiRequest("/apps");
 
     const summary = data.apps.map(app =>
-      `- ${app.name}: ${app.status} (${app.open_bug_count} open bugs)${app.domain ? ` - ${app.domain}` : ""}`
+      `- **${app.name}**: ${app.status} (${app.open_bug_count} open bugs) - ${app.server || "No server"}${app.server_ip ? ` (${app.server_ip})` : ""}`
     ).join("\n");
 
     return {
@@ -79,16 +145,108 @@ server.tool(
           text: `# ${app.name}
 
 **Status:** ${app.status}
-**Server:** ${app.server || "Not assigned"}
+**Server:** ${app.server || "Not assigned"}${app.server_ip ? ` (${app.server_ip})` : ""}
 **Branch:** ${app.branch}
 **Domain:** ${app.domain || app.preview_url || "Not configured"}
+**Deploy Path:** ${app.deploy_path || "N/A"}
+**Claude Ready:** ${app.claude_ready ? "Yes" : "No"}
 
 ## Stats
 - Open bugs: ${app.open_bug_count}
 - Uptime (24h): ${app.uptime_percentage_24h ? `${app.uptime_percentage_24h}%` : "N/A"}
 - Avg response time: ${app.avg_response_time_ms ? `${app.avg_response_time_ms}ms` : "N/A"}
 - Agent connected: ${app.agent_connected ? "Yes" : "No"}
-- Last deployed: ${app.last_deployed_at || "Never"}`,
+- Last deployed: ${app.last_deployed_at || "Never"}
+
+## SSH Access
+${app.ssh_user && app.server_ip ? `\`\`\`bash
+ssh ${app.ssh_user}@${app.server_ip}
+cd ${app.deploy_path}/current
+\`\`\`` : "Server not configured"}
+
+**Note:** When making code changes, create local git commits on the server.`,
+        },
+      ],
+    };
+  }
+);
+
+// List deployments
+server.tool(
+  "list_deployments",
+  "List recent deployments for an app",
+  {
+    app_id: z.string().describe("The app ID or name"),
+    limit: z.number().optional().describe("Number of deployments to return (default 10)"),
+  },
+  async ({ app_id, limit }) => {
+    const params = limit ? `?limit=${limit}` : "?limit=10";
+    const data = await apiRequest(`/apps/${app_id}/deploys${params}`);
+
+    if (data.deploys.length === 0) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `No deployments found for ${data.app.name}.`,
+          },
+        ],
+      };
+    }
+
+    const deployList = data.deploys.map(deploy => {
+      const status = deploy.status === "success" ? "✓" : deploy.status === "failed" ? "✗" : "○";
+      const duration = deploy.duration_seconds ? `${deploy.duration_seconds}s` : "N/A";
+      return `${status} **${deploy.status}** - ${deploy.commit_message || "No message"} (${deploy.branch}) - ${duration}
+   ${deploy.started_at || deploy.created_at} | ID: ${deploy.id}`;
+    }).join("\n\n");
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: `# Deployments for ${data.app.name}\n\n${deployList}`,
+        },
+      ],
+    };
+  }
+);
+
+// Get deployment details
+server.tool(
+  "get_deployment",
+  "Get detailed information about a specific deployment including logs",
+  {
+    app_id: z.string().describe("The app ID or name"),
+    deploy_id: z.string().describe("The deployment ID"),
+  },
+  async ({ app_id, deploy_id }) => {
+    const data = await apiRequest(`/apps/${app_id}/deploys/${deploy_id}`);
+    const deploy = data.deploy;
+
+    const log = deploy.log || "No log available";
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: `# Deployment ${deploy.id}
+
+**Status:** ${deploy.status}
+**Branch:** ${deploy.branch}
+**Commit:** ${deploy.commit_sha || "N/A"}
+**Message:** ${deploy.commit_message_full || "No message"}
+**Initiated by:** ${deploy.initiated_by || "Unknown"}
+**Started:** ${deploy.started_at || "N/A"}
+**Finished:** ${deploy.finished_at || "N/A"}
+**Duration:** ${deploy.duration_seconds ? `${deploy.duration_seconds} seconds` : "N/A"}
+
+${deploy.error_message ? `## Error\n\`\`\`\n${deploy.error_message}\n\`\`\`\n` : ""}
+
+## Deployment Log
+\`\`\`
+${log}
+\`\`\``,
         },
       ],
     };
