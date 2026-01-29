@@ -35,10 +35,11 @@ async function apiRequest(path, options = {}) {
 // Create MCP server
 const server = new McpServer({
   name: "shipitsquirrel",
-  version: "1.0.0",
+  version: "1.2.0",
 });
 
-// List all servers
+// ── Servers ─────────────────────────────────────────────────────────────────────
+
 server.tool(
   "list_servers",
   "List all your servers with their IP addresses and status",
@@ -46,22 +47,19 @@ server.tool(
   async () => {
     const data = await apiRequest("/servers");
 
-    const summary = data.servers.map(server =>
-      `- **${server.name}** (${server.ip_address}): ${server.status} - ${server.app_count} apps${server.claude_ready ? " [Claude Ready]" : ""}`
+    const summary = data.servers.map(s =>
+      `- **${s.name}** (${s.ip_address}): ${s.status} - ${s.app_count} apps`
     ).join("\n");
 
     return {
-      content: [
-        {
-          type: "text",
-          text: `# Your Servers\n\n${summary}\n\nTotal: ${data.servers.length} servers\n\n**Note:** You can SSH into these servers as the deploy user to run commands or use Claude Code.`,
-        },
-      ],
+      content: [{
+        type: "text",
+        text: `# Your Servers\n\n${summary}\n\nTotal: ${data.servers.length} servers\n\n**Note:** You can SSH into these servers as the deploy user to run commands or use Claude Code.`,
+      }],
     };
   }
 );
 
-// Get server details
 server.tool(
   "get_server",
   "Get detailed information about a specific server including its apps",
@@ -69,42 +67,38 @@ server.tool(
     server_id: z.string().describe("The server ID, name, or IP address"),
   },
   async ({ server_id }) => {
-    const data = await apiRequest(`/servers/${server_id}`);
-    const server = data.server;
+    const data = await apiRequest(`/servers/${encodeURIComponent(server_id)}`);
+    const s = data.server;
 
-    const appsList = server.apps?.map(app =>
-      `- ${app.name}: ${app.status} - ${app.deploy_path}`
-    ).join("\n") || "No apps deployed";
+    const appList = s.apps?.map(a => `- ${a.name}: ${a.status} - ${a.deploy_path}`).join("\n") || "No apps";
 
     return {
-      content: [
-        {
-          type: "text",
-          text: `# ${server.name}
+      content: [{
+        type: "text",
+        text: `# ${s.name}
 
-**IP Address:** ${server.ip_address}
-**Status:** ${server.status}
-**Provider:** ${server.provider || "N/A"}
-**Region:** ${server.region || "N/A"}
-**SSH User:** ${server.ssh_user}
-**Claude Ready:** ${server.claude_ready ? "Yes" : "No"}
+**IP Address:** ${s.ip_address}
+**Status:** ${s.status}
+**Provider:** ${s.provider || "N/A"}
+**Region:** ${s.region || "N/A"}
+**SSH User:** ${s.ssh_user || "deploy"}
 
 ## Apps on this server
-${appsList}
+${appList}
 
 ## SSH Access
 \`\`\`bash
-ssh ${server.ssh_user}@${server.ip_address}
+ssh ${s.ssh_user || "deploy"}@${s.ip_address}
 \`\`\`
 
 **Note:** When working on this server, make local git commits for any code changes.`,
-        },
-      ],
+      }],
     };
   }
 );
 
-// List all apps
+// ── Apps ────────────────────────────────────────────────────────────────────────
+
 server.tool(
   "list_apps",
   "List all your Ship It Squirrel apps with their status and bug counts",
@@ -113,21 +107,18 @@ server.tool(
     const data = await apiRequest("/apps");
 
     const summary = data.apps.map(app =>
-      `- **${app.name}**: ${app.status} (${app.open_bug_count} open bugs) - ${app.server || "No server"}${app.server_ip ? ` (${app.server_ip})` : ""}`
+      `- **${app.name}**: ${app.status} (${app.open_bug_count} open bugs) - ${app.server || "no server"} (${app.server_ip || "N/A"})`
     ).join("\n");
 
     return {
-      content: [
-        {
-          type: "text",
-          text: `# Your Apps\n\n${summary}\n\nTotal: ${data.apps.length} apps`,
-        },
-      ],
+      content: [{
+        type: "text",
+        text: `# Your Apps\n\n${summary}\n\nTotal: ${data.apps.length} apps`,
+      }],
     };
   }
 );
 
-// Get app details
 server.tool(
   "get_app",
   "Get detailed information about a specific app",
@@ -135,21 +126,19 @@ server.tool(
     app_id: z.string().describe("The app ID or name"),
   },
   async ({ app_id }) => {
-    const data = await apiRequest(`/apps/${app_id}`);
+    const data = await apiRequest(`/apps/${encodeURIComponent(app_id)}`);
     const app = data.app;
 
     return {
-      content: [
-        {
-          type: "text",
-          text: `# ${app.name}
+      content: [{
+        type: "text",
+        text: `# ${app.name}
 
 **Status:** ${app.status}
-**Server:** ${app.server || "Not assigned"}${app.server_ip ? ` (${app.server_ip})` : ""}
+**Server:** ${app.server || "Not assigned"} (${app.server_ip || "N/A"})
 **Branch:** ${app.branch}
 **Domain:** ${app.domain || app.preview_url || "Not configured"}
-**Deploy Path:** ${app.deploy_path || "N/A"}
-**Claude Ready:** ${app.claude_ready ? "Yes" : "No"}
+**Deploy Path:** ${app.deploy_path}
 
 ## Stats
 - Open bugs: ${app.open_bug_count}
@@ -159,19 +148,19 @@ server.tool(
 - Last deployed: ${app.last_deployed_at || "Never"}
 
 ## SSH Access
-${app.ssh_user && app.server_ip ? `\`\`\`bash
-ssh ${app.ssh_user}@${app.server_ip}
+\`\`\`bash
+ssh ${app.ssh_user || "deploy"}@${app.server_ip}
 cd ${app.deploy_path}/current
-\`\`\`` : "Server not configured"}
+\`\`\`
 
 **Note:** When making code changes, create local git commits on the server.`,
-        },
-      ],
+      }],
     };
   }
 );
 
-// List deployments
+// ── Deployments ─────────────────────────────────────────────────────────────────
+
 server.tool(
   "list_deployments",
   "List recent deployments for an app",
@@ -181,38 +170,36 @@ server.tool(
   },
   async ({ app_id, limit }) => {
     const params = limit ? `?limit=${limit}` : "?limit=10";
-    const data = await apiRequest(`/apps/${app_id}/deploys${params}`);
+    const data = await apiRequest(`/apps/${encodeURIComponent(app_id)}/deploys${params}`);
 
     if (data.deploys.length === 0) {
       return {
-        content: [
-          {
-            type: "text",
-            text: `No deployments found for ${data.app.name}.`,
-          },
-        ],
+        content: [{
+          type: "text",
+          text: `No deployments found for ${data.app.name}.`,
+        }],
       };
     }
 
-    const deployList = data.deploys.map(deploy => {
-      const status = deploy.status === "success" ? "✓" : deploy.status === "failed" ? "✗" : "○";
-      const duration = deploy.duration_seconds ? `${deploy.duration_seconds}s` : "N/A";
-      return `${status} **${deploy.status}** - ${deploy.commit_message || "No message"} (${deploy.branch}) - ${duration}
-   ${deploy.started_at || deploy.created_at} | ID: ${deploy.id}`;
-    }).join("\n\n");
+    const deployList = data.deploys.map(d => {
+      const duration = d.duration_seconds ? `${d.duration_seconds}s` : "N/A";
+      const sha = d.commit_sha ? d.commit_sha.substring(0, 8) : "N/A";
+      return `| ${d.status} | ${sha} | ${d.commit_message || "N/A"} | ${d.deployed_by || "N/A"} | ${duration} | ${d.started_at || d.finished_at || "N/A"} | ${d.id} |`;
+    }).join("\n");
 
     return {
-      content: [
-        {
-          type: "text",
-          text: `# Deployments for ${data.app.name}\n\n${deployList}`,
-        },
-      ],
+      content: [{
+        type: "text",
+        text: `# Deployments for ${data.app.name}
+
+| Status | Commit | Message | By | Duration | Time | ID |
+|--------|--------|---------|----|----------|------|----|
+${deployList}`,
+      }],
     };
   }
 );
 
-// Get deployment details
 server.tool(
   "get_deployment",
   "Get detailed information about a specific deployment including logs",
@@ -221,39 +208,128 @@ server.tool(
     deploy_id: z.string().describe("The deployment ID"),
   },
   async ({ app_id, deploy_id }) => {
-    const data = await apiRequest(`/apps/${app_id}/deploys/${deploy_id}`);
-    const deploy = data.deploy;
+    const data = await apiRequest(`/apps/${encodeURIComponent(app_id)}/deploys/${deploy_id}`);
+    const d = data.deploy;
 
-    const log = deploy.log || "No log available";
+    const duration = d.duration_seconds ? `${d.duration_seconds}s` : "N/A";
 
     return {
-      content: [
-        {
-          type: "text",
-          text: `# Deployment ${deploy.id}
+      content: [{
+        type: "text",
+        text: `# Deployment ${d.id}
 
-**Status:** ${deploy.status}
-**Branch:** ${deploy.branch}
-**Commit:** ${deploy.commit_sha || "N/A"}
-**Message:** ${deploy.commit_message_full || "No message"}
-**Initiated by:** ${deploy.initiated_by || "Unknown"}
-**Started:** ${deploy.started_at || "N/A"}
-**Finished:** ${deploy.finished_at || "N/A"}
-**Duration:** ${deploy.duration_seconds ? `${deploy.duration_seconds} seconds` : "N/A"}
+**Status:** ${d.status}
+**Branch:** ${d.branch}
+**Commit:** ${d.commit_sha || "N/A"}
+**Message:** ${d.commit_message_full || d.commit_message || "N/A"}
+**Deployed by:** ${d.deployed_by || "N/A"}
+**Started:** ${d.started_at || "N/A"}
+**Finished:** ${d.finished_at || "N/A"}
+**Duration:** ${duration}
 
-${deploy.error_message ? `## Error\n\`\`\`\n${deploy.error_message}\n\`\`\`\n` : ""}
-
-## Deployment Log
+## Deploy Log
 \`\`\`
-${log}
+${d.log || "No log available"}
 \`\`\``,
-        },
-      ],
+      }],
     };
   }
 );
 
-// List bugs for an app
+server.tool(
+  "deploy_app",
+  "Trigger a new deployment for an app. Cancels any queued/running deploys first.",
+  {
+    app_id: z.string().describe("The app ID or name"),
+  },
+  async ({ app_id }) => {
+    const data = await apiRequest(`/apps/${encodeURIComponent(app_id)}/deploys`, {
+      method: "POST",
+    });
+
+    return {
+      content: [{
+        type: "text",
+        text: `# Deployment Queued
+
+**App:** ${data.deploy.branch}
+**Deploy ID:** ${data.deploy.id}
+**Status:** ${data.deploy.status}
+
+The deployment has been queued and will start shortly. Use \`get_deployment\` with the deploy ID to check progress.`,
+      }],
+    };
+  }
+);
+
+// ── App Operations ──────────────────────────────────────────────────────────────
+
+server.tool(
+  "restart_app",
+  "Restart the application (Puma web server process)",
+  {
+    app_id: z.string().describe("The app ID or name"),
+  },
+  async ({ app_id }) => {
+    const data = await apiRequest(`/apps/${encodeURIComponent(app_id)}/restart`, {
+      method: "POST",
+    });
+
+    return {
+      content: [{
+        type: "text",
+        text: `Application restarted successfully: ${data.app.name}`,
+      }],
+    };
+  }
+);
+
+server.tool(
+  "rollback_app",
+  "Rollback to the previous successful deployment",
+  {
+    app_id: z.string().describe("The app ID or name"),
+  },
+  async ({ app_id }) => {
+    const data = await apiRequest(`/apps/${encodeURIComponent(app_id)}/rollback`, {
+      method: "POST",
+    });
+
+    return {
+      content: [{
+        type: "text",
+        text: `Rollback completed successfully: ${data.app.name}`,
+      }],
+    };
+  }
+);
+
+server.tool(
+  "get_app_logs",
+  "Get recent application logs (from journalctl/systemd)",
+  {
+    app_id: z.string().describe("The app ID or name"),
+    lines: z.number().optional().describe("Number of log lines to fetch (default 100, max 500)"),
+  },
+  async ({ app_id, lines }) => {
+    const params = lines ? `?lines=${lines}` : "";
+    const data = await apiRequest(`/apps/${encodeURIComponent(app_id)}/logs${params}`);
+
+    return {
+      content: [{
+        type: "text",
+        text: `# Logs for ${data.app.name} (last ${data.lines} lines)
+
+\`\`\`
+${data.logs || "No logs available"}
+\`\`\``,
+      }],
+    };
+  }
+);
+
+// ── Bugs ────────────────────────────────────────────────────────────────────────
+
 server.tool(
   "list_bugs",
   "List bugs for a specific app, optionally filtered by status",
@@ -263,16 +339,14 @@ server.tool(
   },
   async ({ app_id, status }) => {
     const params = status ? `?status=${status}` : "";
-    const data = await apiRequest(`/apps/${app_id}/bugs${params}`);
+    const data = await apiRequest(`/apps/${encodeURIComponent(app_id)}/bugs${params}`);
 
     if (data.bugs.length === 0) {
       return {
-        content: [
-          {
-            type: "text",
-            text: `No ${status || ""} bugs found for this app.`,
-          },
-        ],
+        content: [{
+          type: "text",
+          text: `No ${status || ""} bugs found for this app.`,
+        }],
       };
     }
 
@@ -286,17 +360,14 @@ server.tool(
     ).join("\n\n");
 
     return {
-      content: [
-        {
-          type: "text",
-          text: `# Bugs (${data.counts.open} open, ${data.counts.resolved} resolved, ${data.counts.ignored} ignored)\n\n${bugList}`,
-        },
-      ],
+      content: [{
+        type: "text",
+        text: `# Bugs (${data.counts.open} open, ${data.counts.resolved} resolved, ${data.counts.ignored} ignored)\n\n${bugList}`,
+      }],
     };
   }
 );
 
-// Get bug details
 server.tool(
   "get_bug",
   "Get detailed information about a specific bug including backtrace",
@@ -305,17 +376,16 @@ server.tool(
     bug_id: z.string().describe("The bug ID"),
   },
   async ({ app_id, bug_id }) => {
-    const data = await apiRequest(`/apps/${app_id}/bugs/${bug_id}`);
+    const data = await apiRequest(`/apps/${encodeURIComponent(app_id)}/bugs/${bug_id}`);
     const bug = data.bug;
 
     const backtrace = bug.backtrace?.slice(0, 15).join("\n") || "No backtrace available";
     const context = bug.context ? JSON.stringify(bug.context, null, 2) : "No context";
 
     return {
-      content: [
-        {
-          type: "text",
-          text: `# ${bug.error_class}
+      content: [{
+        type: "text",
+        text: `# ${bug.error_class}
 
 **Message:** ${bug.message}
 **Status:** ${bug.status}
@@ -334,13 +404,11 @@ ${context}
 \`\`\`
 
 ${bug.resolution_notes ? `## Resolution Notes\n${bug.resolution_notes}` : ""}`,
-        },
-      ],
+      }],
     };
   }
 );
 
-// Resolve a bug
 server.tool(
   "resolve_bug",
   "Mark a bug as resolved",
@@ -351,23 +419,20 @@ server.tool(
   },
   async ({ app_id, bug_id, notes }) => {
     const body = notes ? JSON.stringify({ notes }) : undefined;
-    const data = await apiRequest(`/apps/${app_id}/bugs/${bug_id}/resolve`, {
+    const data = await apiRequest(`/apps/${encodeURIComponent(app_id)}/bugs/${bug_id}/resolve`, {
       method: "POST",
       body,
     });
 
     return {
-      content: [
-        {
-          type: "text",
-          text: `Bug resolved: ${data.bug.error_class}\n\nThe bug has been marked as resolved.`,
-        },
-      ],
+      content: [{
+        type: "text",
+        text: `Bug resolved: ${data.bug.error_class}\n\nThe bug has been marked as resolved.`,
+      }],
     };
   }
 );
 
-// Ignore a bug
 server.tool(
   "ignore_bug",
   "Mark a bug as ignored (won't show in open bugs)",
@@ -378,23 +443,20 @@ server.tool(
   },
   async ({ app_id, bug_id, notes }) => {
     const body = notes ? JSON.stringify({ notes }) : undefined;
-    const data = await apiRequest(`/apps/${app_id}/bugs/${bug_id}/ignore`, {
+    const data = await apiRequest(`/apps/${encodeURIComponent(app_id)}/bugs/${bug_id}/ignore`, {
       method: "POST",
       body,
     });
 
     return {
-      content: [
-        {
-          type: "text",
-          text: `Bug ignored: ${data.bug.error_class}\n\nThe bug has been marked as ignored.`,
-        },
-      ],
+      content: [{
+        type: "text",
+        text: `Bug ignored: ${data.bug.error_class}\n\nThe bug has been marked as ignored.`,
+      }],
     };
   }
 );
 
-// Reopen a bug
 server.tool(
   "reopen_bug",
   "Reopen a previously resolved or ignored bug",
@@ -403,17 +465,15 @@ server.tool(
     bug_id: z.string().describe("The bug ID"),
   },
   async ({ app_id, bug_id }) => {
-    const data = await apiRequest(`/apps/${app_id}/bugs/${bug_id}/reopen`, {
+    const data = await apiRequest(`/apps/${encodeURIComponent(app_id)}/bugs/${bug_id}/reopen`, {
       method: "POST",
     });
 
     return {
-      content: [
-        {
-          type: "text",
-          text: `Bug reopened: ${data.bug.error_class}\n\nThe bug is now open again.`,
-        },
-      ],
+      content: [{
+        type: "text",
+        text: `Bug reopened: ${data.bug.error_class}\n\nThe bug is now open again.`,
+      }],
     };
   }
 );

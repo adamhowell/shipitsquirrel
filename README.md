@@ -1,31 +1,30 @@
 # Ship It Squirrel MCP Server
 
-Connect Claude Code to your Ship It Squirrel apps for server management, deployments, and bug tracking.
+Connect Claude Code to your Ship It Squirrel apps to deploy, monitor, debug, and fix your Rails apps from the terminal.
 
 ## Installation
 
 ### 1. Get your API Token
 
-1. Go to [shipitsquirrel.com/settings/integrations](https://shipitsquirrel.com/settings/integrations)
+1. Go to [shipitsquirrel.com/settings/api](https://shipitsquirrel.com/settings/api)
 2. Create a new API token
 3. Copy the token
 
 ### 2. Add to Claude Code
 
-**Option A: CLI (Recommended)**
+The easiest way is to use the CLI:
 
 ```bash
-claude mcp add -e "SHIPITSQUIRREL_API_TOKEN=your-token-here" -s user shipitsquirrel -- npx -y @shipitsquirrel/mcp-server
+claude mcp add -e "SHIPITSQUIRREL_API_TOKEN=your-api-token-here" -s user shipitsquirrel -- npx -y @shipitsquirrel/mcp-server
 ```
 
-**Option B: Manual Configuration**
-
-Add this to your Claude Code config (`~/.claude.json`):
+Or manually add this to your `~/.claude.json` file:
 
 ```json
 {
   "mcpServers": {
     "shipitsquirrel": {
+      "type": "stdio",
       "command": "npx",
       "args": ["-y", "@shipitsquirrel/mcp-server"],
       "env": {
@@ -38,29 +37,37 @@ Add this to your Claude Code config (`~/.claude.json`):
 
 ### 3. Restart Claude Code
 
-Restart Claude Code to load the new MCP server.
+Restart Claude Code to load the new MCP server. Verify it's connected with `/mcp`.
 
 ## Available Tools
 
 ### Servers
+
 | Tool | Description |
 |------|-------------|
 | `list_servers` | List all your servers with IPs and status |
 | `get_server` | Get detailed server info including apps |
 
 ### Apps
+
 | Tool | Description |
 |------|-------------|
 | `list_apps` | List all your apps with status and bug counts |
 | `get_app` | Get detailed info about a specific app |
 
-### Deployments
+### Deployments & Operations
+
 | Tool | Description |
 |------|-------------|
 | `list_deployments` | List recent deployments for an app |
-| `get_deployment` | Get deployment details including logs |
+| `get_deployment` | Get deployment details including full log |
+| `deploy_app` | Trigger a new deployment |
+| `restart_app` | Restart the application (Puma) |
+| `rollback_app` | Rollback to previous successful deployment |
+| `get_app_logs` | Get recent application logs from the server |
 
 ### Bug Tracking
+
 | Tool | Description |
 |------|-------------|
 | `list_bugs` | List bugs for an app (filter by status) |
@@ -74,12 +81,17 @@ Restart Claude Code to load the new MCP server.
 Once connected, you can ask Claude things like:
 
 - "List my Ship It Squirrel servers"
-- "Show me the apps on server-name"
-- "List recent deployments for my-app"
-- "Show me the open bugs for my-app"
-- "Get details on bug abc123"
+- "Show me open bugs for my-app"
+- "Get details on bug abc123 and fix the code"
+- "Deploy my-app"
+- "Show me the last 200 lines of logs for my-app"
+- "Rollback my-app to the previous version"
+- "Restart my-app"
 - "Resolve bug xyz789 with notes 'Fixed in commit abc'"
-- "What's the deployment log for deploy-id?"
+
+### Full Bug Fix Workflow
+
+Claude can handle the entire cycle: see a bug, read the backtrace, find the relevant code, fix it, deploy the fix, then mark the bug as resolved.
 
 ## Environment Variables
 
