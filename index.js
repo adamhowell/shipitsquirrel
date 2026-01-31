@@ -35,7 +35,7 @@ async function apiRequest(path, options = {}) {
 // Create MCP server
 const server = new McpServer({
   name: "shipitsquirrel",
-  version: "1.2.0",
+  version: "2.0.0",
 });
 
 // ── Servers ─────────────────────────────────────────────────────────────────────
@@ -92,6 +92,131 @@ ssh ${s.ssh_user || "deploy"}@${s.ip_address}
 \`\`\`
 
 **Note:** When working on this server, make local git commits for any code changes.`,
+      }],
+    };
+  }
+);
+
+server.tool(
+  "list_regions",
+  "List available DigitalOcean regions for server creation",
+  {},
+  async () => {
+    const data = await apiRequest("/regions");
+
+    if (data.regions.length === 0) {
+      return {
+        content: [{
+          type: "text",
+          text: "No regions available. Make sure your DigitalOcean token is configured.",
+        }],
+      };
+    }
+
+    const table = data.regions.map(r =>
+      `| ${r.slug} | ${r.name} |`
+    ).join("\n");
+
+    return {
+      content: [{
+        type: "text",
+        text: `# Available Regions
+
+| Slug | Name |
+|------|------|
+${table}
+
+Use the **slug** value when creating a server with \`create_server\`.`,
+      }],
+    };
+  }
+);
+
+server.tool(
+  "list_sizes",
+  "List available DigitalOcean droplet sizes for server creation",
+  {},
+  async () => {
+    const data = await apiRequest("/sizes");
+
+    if (data.sizes.length === 0) {
+      return {
+        content: [{
+          type: "text",
+          text: "No sizes available. Make sure your DigitalOcean token is configured.",
+        }],
+      };
+    }
+
+    const table = data.sizes.map(s => {
+      const ram = s.memory >= 1024 ? `${s.memory / 1024}GB` : `${s.memory}MB`;
+      return `| ${s.slug} | ${s.vcpus} | ${ram} | ${s.disk}GB | $${s.price_monthly}/mo |`;
+    }).join("\n");
+
+    return {
+      content: [{
+        type: "text",
+        text: `# Available Sizes
+
+| Slug | CPUs | RAM | Disk | Price |
+|------|------|-----|------|-------|
+${table}
+
+Use the **slug** value when creating a server with \`create_server\`. Minimum 2GB RAM is required for Rails.`,
+      }],
+    };
+  }
+);
+
+server.tool(
+  "create_server",
+  "Create a new server (DigitalOcean droplet) and start provisioning with Ruby, PostgreSQL, Redis, and Caddy",
+  {
+    name: z.string().describe("Server name (e.g., 'my-rails-server')"),
+    region: z.string().describe("DigitalOcean region slug (e.g., 'nyc1'). Use list_regions to see options."),
+    size: z.string().describe("Droplet size slug (e.g., 's-1vcpu-2gb'). Use list_sizes to see options."),
+  },
+  async ({ name, region, size }) => {
+    const data = await apiRequest("/servers", {
+      method: "POST",
+      body: JSON.stringify({ name, region, size }),
+    });
+
+    const s = data.server;
+
+    return {
+      content: [{
+        type: "text",
+        text: `# Server Created
+
+**Name:** ${s.name}
+**Status:** ${s.status}
+**Region:** ${s.region}
+**Size:** ${s.size || size}
+
+${data.message}
+
+Use \`get_server\` with name "${s.name}" to check provisioning progress. Once status is "provisioned" or "connected", you can create apps on it.`,
+      }],
+    };
+  }
+);
+
+server.tool(
+  "delete_server",
+  "Delete a server and its DigitalOcean droplet",
+  {
+    server_id: z.string().describe("The server ID, name, or IP address"),
+  },
+  async ({ server_id }) => {
+    const data = await apiRequest(`/servers/${encodeURIComponent(server_id)}`, {
+      method: "DELETE",
+    });
+
+    return {
+      content: [{
+        type: "text",
+        text: `${data.message}${data.droplet_deleted ? " (droplet also deleted from DigitalOcean)" : " (note: droplet may still exist on DigitalOcean)"}`,
       }],
     };
   }
@@ -154,6 +279,116 @@ cd ${app.deploy_path}/current
 \`\`\`
 
 **Note:** When making code changes, create local git commits on the server.`,
+      }],
+    };
+  }
+);
+
+server.tool(
+  "create_app",
+  "Create a new app on a server. Configures deploy key, webhook, and subdomain automatically.",
+  {
+    name: z.string().describe("App name (e.g., 'my-rails-app')"),
+    server_id: z.string().describe("Server ID or name to deploy on"),
+    repo_url: z.string().describe("Git repository URL (e.g., 'git@github.com:user/repo.git')"),
+    branch: z.string().optional().describe("Git branch (default: 'main')"),
+    rails_master_key: z.string().optional().describe("Rails master key for credentials decryption"),
+    deploy_mode: z.string().optional().describe("'manual' (default) or 'auto' for auto-deploy on push"),
+    domain: z.string().optional().describe("Custom domain (e.g., 'myapp.com'). A preview URL is always generated."),
+  },
+  async ({ name, server_id, repo_url, branch, rails_master_key, deploy_mode, domain }) => {
+    const body = { name, server_id, repo_url };
+    if (branch) body.branch = branch;
+    if (rails_master_key) body.rails_master_key = rails_master_key;
+    if (deploy_mode) body.deploy_mode = deploy_mode;
+    if (domain) body.domain = domain;
+
+    const data = await apiRequest("/apps", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+
+    const app = data.app;
+
+    return {
+      content: [{
+        type: "text",
+        text: `# App Created
+
+**Name:** ${app.name}
+**Server:** ${app.server}
+**Branch:** ${app.branch}
+**Deploy Mode:** ${app.deploy_mode}
+**Preview URL:** ${app.preview_url}
+${app.domain ? `**Domain:** ${app.domain}` : ""}
+**Deploy Path:** ${app.deploy_path}
+
+${data.message}
+
+**Next steps:**
+1. Run \`deploy_app\` with app name "${app.name}" to deploy
+2. Use \`get_deployment\` to check deploy progress
+3. Visit ${app.preview_url} once deployed`,
+      }],
+    };
+  }
+);
+
+server.tool(
+  "update_app",
+  "Update an app's configuration (branch, deploy mode, domain, or Rails master key)",
+  {
+    app_id: z.string().describe("The app ID or name"),
+    branch: z.string().optional().describe("Git branch to deploy from"),
+    deploy_mode: z.string().optional().describe("'manual' or 'auto'"),
+    domain: z.string().optional().describe("Custom domain"),
+    rails_master_key: z.string().optional().describe("Rails master key"),
+  },
+  async ({ app_id, branch, deploy_mode, domain, rails_master_key }) => {
+    const body = {};
+    if (branch !== undefined) body.branch = branch;
+    if (deploy_mode !== undefined) body.deploy_mode = deploy_mode;
+    if (domain !== undefined) body.domain = domain;
+    if (rails_master_key !== undefined) body.rails_master_key = rails_master_key;
+
+    const data = await apiRequest(`/apps/${encodeURIComponent(app_id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+
+    const app = data.app;
+
+    return {
+      content: [{
+        type: "text",
+        text: `# App Updated: ${app.name}
+
+**Branch:** ${app.branch}
+**Deploy Mode:** ${app.deploy_mode}
+**Domain:** ${app.domain || app.preview_url}
+**Server:** ${app.server}
+
+${data.message}`,
+      }],
+    };
+  }
+);
+
+server.tool(
+  "delete_app",
+  "Delete an app and all its associated data (bugs, deploys, uptime checks)",
+  {
+    app_id: z.string().describe("The app ID or name"),
+  },
+  async ({ app_id }) => {
+    const data = await apiRequest(`/apps/${encodeURIComponent(app_id)}`, {
+      method: "DELETE",
+    });
+
+    return {
+      content: [{
+        type: "text",
+        text: data.message,
       }],
     };
   }

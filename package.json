@@ -1,6 +1,6 @@
 {
   "name": "@shipitsquirrel/mcp-server",
-  "version": "1.2.1",
+  "version": "2.0.0",
   "description": "MCP server for Ship It Squirrel - deploy, monitor, and fix your Rails apps",
   "main": "index.js",
   "type": "module",

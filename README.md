@@ -41,6 +41,18 @@ Restart Claude Code to load the new MCP server. Verify it's connected with `/mcp
 
 ## Available Tools
 
+### Infrastructure
+
+| Tool | Description |
+|------|-------------|
+| `list_regions` | List available DigitalOcean regions |
+| `list_sizes` | List available droplet sizes with pricing |
+| `create_server` | Create and provision a new server (Ruby, PostgreSQL, Redis, Caddy) |
+| `delete_server` | Delete a server and its DigitalOcean droplet |
+| `create_app` | Create a new app on a server with GitHub integration |
+| `update_app` | Update app config (branch, deploy mode, domain) |
+| `delete_app` | Delete an app and all associated data |
+
 ### Servers
 
 | Tool | Description |
@@ -76,10 +88,27 @@ Restart Claude Code to load the new MCP server. Verify it's connected with `/mcp
 | `ignore_bug` | Mark a bug as ignored |
 | `reopen_bug` | Reopen a resolved/ignored bug |
 
+## Getting Started with Agents
+
+With the infrastructure tools, Claude can go from zero to a running Rails app entirely from the terminal:
+
+```
+1. list_regions / list_sizes        → pick infrastructure
+2. create_server name region size   → provisions in ~5 min
+3. get_server (poll until ready)
+4. create_app name server repo      → configures everything
+5. deploy_app                       → live app with SSL
+```
+
+Just tell Claude: *"Create a new server in NYC and deploy my Rails app from github.com/user/repo"* and it handles the rest.
+
+**Prerequisites:** You need a DigitalOcean token configured in [Settings > Integrations](https://shipitsquirrel.com/settings/integrations) and an active subscription in [Settings > Billing](https://shipitsquirrel.com/settings/billing).
+
 ## Example Usage
 
 Once connected, you can ask Claude things like:
 
+- "Create a new server in San Francisco and deploy my app"
 - "List my Ship It Squirrel servers"
 - "Show me open bugs for my-app"
 - "Get details on bug abc123 and fix the code"
