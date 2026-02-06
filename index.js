@@ -4,7 +4,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 
-const API_BASE = process.env.SHIPITSQUIRREL_URL || "https://shipitsquirrel.com";
+const API_BASE = process.env.SHIPITSQUIRREL_URL || "https://sis.hardworkmontage.com";
 const API_TOKEN = process.env.SHIPITSQUIRREL_API_TOKEN;
 
 if (!API_TOKEN) {
@@ -262,7 +262,7 @@ server.tool(
 **Status:** ${app.status}
 **Server:** ${app.server || "Not assigned"} (${app.server_ip || "N/A"})
 **Branch:** ${app.branch}
-**Domain:** ${app.domain || app.preview_url || "Not configured"}
+**Domain:** ${app.domain || "Not configured"}
 **Deploy Path:** ${app.deploy_path}
 
 ## Stats
@@ -286,7 +286,7 @@ cd ${app.deploy_path}/current
 
 server.tool(
   "create_app",
-  "Create a new app on a server. Configures deploy key, webhook, and subdomain automatically.",
+  "Create a new app on a server. Configures deploy key and webhook automatically.",
   {
     name: z.string().describe("App name (e.g., 'my-rails-app')"),
     server_id: z.string().describe("Server ID or name to deploy on"),
@@ -294,7 +294,7 @@ server.tool(
     branch: z.string().optional().describe("Git branch (default: 'main')"),
     rails_master_key: z.string().optional().describe("Rails master key for credentials decryption"),
     deploy_mode: z.string().optional().describe("'manual' (default) or 'auto' for auto-deploy on push"),
-    domain: z.string().optional().describe("Custom domain (e.g., 'myapp.com'). A preview URL is always generated."),
+    domain: z.string().optional().describe("Custom domain (e.g., 'myapp.com')"),
   },
   async ({ name, server_id, repo_url, branch, rails_master_key, deploy_mode, domain }) => {
     const body = { name, server_id, repo_url };
@@ -319,8 +319,7 @@ server.tool(
 **Server:** ${app.server}
 **Branch:** ${app.branch}
 **Deploy Mode:** ${app.deploy_mode}
-**Preview URL:** ${app.preview_url}
-${app.domain ? `**Domain:** ${app.domain}` : ""}
+${app.domain ? `**Domain:** ${app.domain}` : "**Domain:** Not configured"}
 **Deploy Path:** ${app.deploy_path}
 
 ${data.message}
@@ -328,7 +327,7 @@ ${data.message}
 **Next steps:**
 1. Run \`deploy_app\` with app name "${app.name}" to deploy
 2. Use \`get_deployment\` to check deploy progress
-3. Visit ${app.preview_url} once deployed`,
+${app.domain ? `3. Visit https://${app.domain} once deployed` : "3. Configure a custom domain with \`update_app\`"}`,
       }],
     };
   }
@@ -365,7 +364,7 @@ server.tool(
 
 **Branch:** ${app.branch}
 **Deploy Mode:** ${app.deploy_mode}
-**Domain:** ${app.domain || app.preview_url}
+**Domain:** ${app.domain || "Not configured"}
 **Server:** ${app.server}
 
 ${data.message}`,
