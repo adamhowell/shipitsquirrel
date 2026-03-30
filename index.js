@@ -222,6 +222,28 @@ server.tool(
   }
 );
 
+server.tool(
+  "rename_server",
+  "Rename a server. Updates both the SIS database and the DigitalOcean droplet name.",
+  {
+    server_id: z.string().describe("The server ID, name, or IP address"),
+    name: z.string().describe("The new name for the server"),
+  },
+  async ({ server_id, name }) => {
+    const data = await apiRequest(`/servers/${encodeURIComponent(server_id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name }),
+    });
+
+    return {
+      content: [{
+        type: "text",
+        text: data.message,
+      }],
+    };
+  }
+);
+
 // ── Apps ────────────────────────────────────────────────────────────────────────
 
 server.tool(
